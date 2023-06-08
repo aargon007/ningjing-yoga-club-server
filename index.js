@@ -63,6 +63,24 @@ async function run() {
 			res.send({ token });
 		});
 
+		const verifyAdmin = async (req, res, next) => {
+			const email = req.decoded.email;
+			const query = { email: email };
+			const user = await usersCollection.findOne(query);
+			if (user?.role !== "admin") {
+				return res
+					.status(403)
+					.send({ error: true, message: "forbidden message" });
+			}
+			next();
+		};
+
+		//read user info
+		app.get("/users", verifyJWT, verifyAdmin, async (req, res) => {
+			const result = await usersCollection.find().toArray();
+			res.send(result);
+		});
+
 		//add users info in db
 		app.post("/users", async (req, res) => {
 			console.log(req.body);
@@ -77,8 +95,6 @@ async function run() {
 			const result = await usersCollection.insertOne(user);
 			res.send(result);
 		});
-
-		
 
 		// Send a ping to confirm a successful connection
 		await client.db("admin").command({ ping: 1 });
