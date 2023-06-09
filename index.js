@@ -75,28 +75,27 @@ async function run() {
 			next();
 		};
 
-		//read user info
+		//read user info for admin only
 		app.get("/users", verifyJWT, verifyAdmin, async (req, res) => {
 			const result = await usersCollection.find().toArray();
 			res.send(result);
 		});
 
-		//add users info in db
-		app.post("/users", async (req, res) => {
-			console.log(req.body);
-			const user = req.body;
-			const query = { email: user.email };
-			const existingUser = await usersCollection.findOne(query);
-
-			if (existingUser) {
-				return res.send({ message: "user already exists" });
+		//read single users data
+		app.get("/users/:email", verifyJWT, async (req, res) => {
+			const email = req.params.email;
+			const decodedEmail = req.decoded.email;
+			if (email !== decodedEmail) {
+				return res
+					.status(403)
+					.send({ error: true, message: "unauthorized access" });
 			}
-
-			const result = await usersCollection.insertOne(user);
+			const query = { email: email };
+			const result = await usersCollection.findOne(query);
 			res.send(result);
 		});
 
-        //check if user is admin
+		//check if user is admin
 		app.get("/users/admin/:email", verifyJWT, async (req, res) => {
 			const email = req.params.email;
 
@@ -110,17 +109,66 @@ async function run() {
 			res.send(result);
 		});
 
-        //check if user is Instructor
+		//check if user is Instructor
 		app.get("/users/instructor/:email", verifyJWT, async (req, res) => {
 			const email = req.params.email;
 
 			if (req.decoded.email !== email) {
-				res.send({ instructor : false });
+				res.send({ instructor: false });
 			}
 
 			const query = { email: email };
 			const user = await usersCollection.findOne(query);
-			const result = { instructor : user?.role === "instructor" };
+			const result = { instructor: user?.role === "instructor" };
+			res.send(result);
+		});
+
+		//add users info in db for all users
+		app.post("/users", async (req, res) => {
+			const user = req.body;
+			const query = { email: user.email };
+			const existingUser = await usersCollection.findOne(query);
+
+			if (existingUser) {
+				return res.send({ message: "user already exists" });
+			}
+
+			const result = await usersCollection.insertOne(user);
+			res.send(result);
+		});
+
+		//update single user info
+		app.patch("/users/:id", verifyJWT, async (req, res) => {
+			const id = req.params.id;
+			const body = req.body;
+			
+			const filter = { _id: new ObjectId(id)};
+			
+			const updateUser = {
+				$set: {
+					photo: body.photo,
+					name: body.name,
+					phone: body.phone,
+					address: body.address,
+                    gender : body.gender
+				},
+			};
+           
+			const result = await usersCollection.updateOne(filter, updateUser);
+			res.send(result);
+		});
+
+		//update role for admin only
+		app.patch("/users/admin/:id",verifyJWT, verifyAdmin, async (req, res) => {
+			const id = req.params.id;
+			const body = req.body;
+			const filter = { _id: new ObjectId(id) };
+			const updateUser = {
+				$set: {
+                    role : body.role
+				},
+			};
+			const result = await usersCollection.updateOne(filter, updateUser);
 			res.send(result);
 		});
 
