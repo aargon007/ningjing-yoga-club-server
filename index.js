@@ -52,6 +52,7 @@ async function run() {
 
 		//db pool
 		const usersCollection = client.db("yogaMeditation").collection("users");
+		const classCollection = client.db("yogaMeditation").collection("classes");
 
 		//jwt token
 		app.post("/jwt", (req, res) => {
@@ -141,36 +142,90 @@ async function run() {
 		app.patch("/users/:id", verifyJWT, async (req, res) => {
 			const id = req.params.id;
 			const body = req.body;
-			
-			const filter = { _id: new ObjectId(id)};
-			
+
+			const filter = { _id: new ObjectId(id) };
+
 			const updateUser = {
 				$set: {
 					photo: body.photo,
 					name: body.name,
 					phone: body.phone,
 					address: body.address,
-                    gender : body.gender
+					gender: body.gender,
 				},
 			};
-           
+
 			const result = await usersCollection.updateOne(filter, updateUser);
 			res.send(result);
 		});
 
 		//update role for admin only
-		app.patch("/users/admin/:id",verifyJWT, verifyAdmin, async (req, res) => {
+		app.patch("/users/admin/:id", verifyJWT, verifyAdmin, async (req, res) => {
 			const id = req.params.id;
 			const body = req.body;
 			const filter = { _id: new ObjectId(id) };
 			const updateUser = {
 				$set: {
-                    role : body.role
+					role: body.role,
 				},
 			};
 			const result = await usersCollection.updateOne(filter, updateUser);
 			res.send(result);
 		});
+
+		//get all classes
+		app.get("/classes", async (req, res) => {
+			const result = await classCollection
+				.find()
+				.sort({ createdAt: -1 })
+				.toArray();
+			res.send(result);
+		});
+
+		// get class for instructor
+		app.get("/classes/instructor/:email", verifyJWT, async (req, res) => {
+			const email = req.params.email;
+
+			if (!email) {
+				res.send([]);
+			}
+
+			const decodedEmail = req.decoded.email;
+			if (email !== decodedEmail) {
+				return res
+					.status(403)
+					.send({ error: true, message: "forbidden access" });
+			}
+
+			const query = { email: email };
+			const result = await classCollection.find(query).toArray();
+			res.send(result);
+		});
+
+		//add class
+		app.post("/classes", verifyJWT, async (req, res) => {
+			const classItem = req.body;
+			classItem.createdAt = new Date();
+			const result = await classCollection.insertOne(classItem);
+			res.send(result);
+		});
+
+        //update class data
+        app.patch('/classes/instructor/:id',verifyJWT, async (req, res) => {
+            const id = req.params.id;
+            const body = req.body;
+            const filter = { _id: new ObjectId(id) };
+            const updateClass = {
+              $set: {
+                name : body.name,
+                image : body.image,
+                seats : body.seats,
+                price : body.price
+              },
+            };
+            const result = await usersCollection.updateOne(filter, updateClass);
+            res.send(result);
+          })
 
 		// Send a ping to confirm a successful connection
 		await client.db("admin").command({ ping: 1 });
