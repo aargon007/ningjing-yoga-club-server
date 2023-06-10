@@ -210,22 +210,36 @@ async function run() {
 			res.send(result);
 		});
 
-        //update class data
-        app.patch('/classes/instructor/:id',verifyJWT, async (req, res) => {
-            const id = req.params.id;
-            const body = req.body;
-            const filter = { _id: new ObjectId(id) };
-            const updateClass = {
-              $set: {
-                name : body.name,
-                image : body.image,
-                seats : body.seats,
-                price : body.price
-              },
-            };
-            const result = await usersCollection.updateOne(filter, updateClass);
-            res.send(result);
-          })
+		//update class data
+		app.patch("/classes/instructor/:id", verifyJWT, async (req, res) => {
+			const id = req.params.id;
+			const body = req.body;
+			const filter = { _id: new ObjectId(id) };
+			const updateClass = {
+				$set: {
+					name: body.name,
+					image: body.image,
+					seats: body.seats,
+					price: body.price,
+				},
+			};
+			const result = await usersCollection.updateOne(filter, updateClass);
+			res.send(result);
+		});
+
+        //update feedback
+        app.patch("/classes/feedback/:id", verifyJWT, verifyAdmin, async (req, res) => {
+			const id = req.params.id;
+			const body = req.body;
+			const filter = { _id: new ObjectId(id) };
+			const updateFeedback = {
+				$set: {
+					feedback : body.feedback
+				},
+			};
+			const result = await usersCollection.updateOne(filter, updateFeedback);
+			res.send(result);
+		});
 
 		// Send a ping to confirm a successful connection
 		await client.db("admin").command({ ping: 1 });
