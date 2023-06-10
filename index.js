@@ -223,7 +223,21 @@ async function run() {
 					price: body.price,
 				},
 			};
-			const result = await usersCollection.updateOne(filter, updateClass);
+			const result = await classCollection.updateOne(filter, updateClass);
+			res.send(result);
+		});
+
+        //update class status
+        app.patch("/classes/admin/:id", verifyJWT, verifyAdmin, async (req, res) => {
+			const id = req.params.id;
+			const body = req.body;
+			const filter = { _id : new ObjectId(id) };
+			const updateStatus = {
+				$set: {
+					status : body.status
+				},
+			};
+			const result = await classCollection.updateOne(filter, updateStatus);
 			res.send(result);
 		});
 
@@ -231,13 +245,15 @@ async function run() {
         app.patch("/classes/feedback/:id", verifyJWT, verifyAdmin, async (req, res) => {
 			const id = req.params.id;
 			const body = req.body;
-			const filter = { _id: new ObjectId(id) };
+
+			const filter = { _id : new ObjectId(id) };
 			const updateFeedback = {
 				$set: {
 					feedback : body.feedback
 				},
 			};
-			const result = await usersCollection.updateOne(filter, updateFeedback);
+
+			const result = await classCollection.updateOne(filter, updateFeedback);
 			res.send(result);
 		});
 
