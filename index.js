@@ -278,11 +278,39 @@ async function run() {
 			res.send(result);
 		});
 
+        //get selected classes for student
+        app.get("/selectedClasses/:email", verifyJWT, async (req, res) => {
+			const email = req.params.email;
+
+			if (!email) {
+				res.send([]);
+			}
+
+			const decodedEmail = req.decoded.email;
+			if (email !== decodedEmail) {
+				return res
+					.status(403)
+					.send({ error: true, message: "forbidden access" });
+			}
+
+			const query = { studentEmail: email };
+			const result = await selectedClassCollection.find(query).sort({ createdAt: -1 }).toArray();
+			res.send(result);
+		});
+
         //selected class for student
 		app.post("/selectedClasses", verifyJWT, async (req, res) => {
 			const selectItem = req.body;
 			selectItem.createdAt = new Date();
 			const result = await selectedClassCollection.insertOne(selectItem);
+			res.send(result);
+		});
+
+        //delete an selected class
+		app.delete("/selectedClasses/:id", async (req, res) => {
+			const id = req.params.id;
+			const deleteItem = { _id: new ObjectId(id) };
+			const result = await selectedClassCollection.deleteOne(deleteItem);
 			res.send(result);
 		});
 
