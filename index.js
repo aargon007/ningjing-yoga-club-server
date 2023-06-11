@@ -53,6 +53,8 @@ async function run() {
 		//db pool
 		const usersCollection = client.db("yogaMeditation").collection("users");
 		const classCollection = client.db("yogaMeditation").collection("classes");
+		const selectedClassCollection = client.db("yogaMeditation").collection("selectedClass");
+		const enrolledClassCollection = client.db("yogaMeditation").collection("enrolledClass");
 
 		//jwt token
 		app.post("/jwt", (req, res) => {
@@ -79,6 +81,15 @@ async function run() {
 		//read user info for admin only
 		app.get("/users", verifyJWT, verifyAdmin, async (req, res) => {
 			const result = await usersCollection.find().toArray();
+			res.send(result);
+		});
+
+        //get only instructors data for public user
+        app.get("/allInstructors", async (req, res) => {
+			const result = await usersCollection
+				.find({role : "instructor"})
+				.sort({ createdAt: -1 })
+				.toArray();
 			res.send(result);
 		});
 
@@ -127,6 +138,7 @@ async function run() {
 		//add users info in db for all users
 		app.post("/users", async (req, res) => {
 			const user = req.body;
+            user.createdAt = new Date();
 			const query = { email: user.email };
 			const existingUser = await usersCollection.findOne(query);
 
@@ -173,8 +185,8 @@ async function run() {
 			res.send(result);
 		});
 
-		//get all classes
-		app.get("/classes", async (req, res) => {
+		//get all classes for admin
+		app.get("/classes", verifyJWT, verifyAdmin, async (req, res) => {
 			const result = await classCollection
 				.find()
 				.sort({ createdAt: -1 })
@@ -182,7 +194,7 @@ async function run() {
 			res.send(result);
 		});
 
-		// get class for instructor
+		// get class data for instructor
 		app.get("/classes/instructor/:email", verifyJWT, async (req, res) => {
 			const email = req.params.email;
 
@@ -202,7 +214,16 @@ async function run() {
 			res.send(result);
 		});
 
-		//add class
+        //get approved class for public
+        app.get("/publicClasses", async (req, res) => {
+			const result = await classCollection
+				.find({status : "approved"})
+				.sort({ createdAt: -1 })
+				.toArray();
+			res.send(result);
+		});
+
+		//add class -- instructor only
 		app.post("/classes", verifyJWT, async (req, res) => {
 			const classItem = req.body;
 			classItem.createdAt = new Date();
@@ -210,7 +231,7 @@ async function run() {
 			res.send(result);
 		});
 
-		//update class data
+		//update class data -- instructor only
 		app.patch("/classes/instructor/:id", verifyJWT, async (req, res) => {
 			const id = req.params.id;
 			const body = req.body;
@@ -227,7 +248,7 @@ async function run() {
 			res.send(result);
 		});
 
-        //update class status
+        //update class status -- admin only
         app.patch("/classes/admin/:id", verifyJWT, verifyAdmin, async (req, res) => {
 			const id = req.params.id;
 			const body = req.body;
@@ -241,7 +262,7 @@ async function run() {
 			res.send(result);
 		});
 
-        //update feedback
+        //update feedback - admin only
         app.patch("/classes/feedback/:id", verifyJWT, verifyAdmin, async (req, res) => {
 			const id = req.params.id;
 			const body = req.body;
@@ -254,6 +275,14 @@ async function run() {
 			};
 
 			const result = await classCollection.updateOne(filter, updateFeedback);
+			res.send(result);
+		});
+
+        //selected class for student
+		app.post("/selectedClasses", verifyJWT, async (req, res) => {
+			const selectItem = req.body;
+			selectItem.createdAt = new Date();
+			const result = await selectedClassCollection.insertOne(selectItem);
 			res.send(result);
 		});
 
