@@ -332,6 +332,29 @@ async function run() {
 			res.send(result);
 		});
 
+        ////get enrolled classes for student
+		app.get("/enrolledClasses/:email", verifyJWT, async (req, res) => {
+			const email = req.params.email;
+
+			if (!email) {
+				res.send([]);
+			}
+
+			const decodedEmail = req.decoded.email;
+			if (email !== decodedEmail) {
+				return res
+					.status(403)
+					.send({ error: true, message: "forbidden access" });
+			}
+
+			const query = { email: email };
+			const result = await enrolledClassCollection
+				.find(query)
+				.sort({ createdAt: -1 })
+				.toArray();
+			res.send(result);
+		});
+
 		// create payment intent
 		app.post("/create-payment-intent", verifyJWT, async (req, res) => {
 			const { price } = req.body;
