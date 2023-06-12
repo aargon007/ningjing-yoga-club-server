@@ -93,7 +93,7 @@ async function run() {
 		app.get("/allInstructors", async (req, res) => {
 			const result = await usersCollection
 				.find({ role: "instructor" })
-				.sort({ createdAt: -1 })
+				.sort({ createdAt: -1, enrolled })
 				.toArray();
 			res.send(result);
 		});
@@ -224,6 +224,16 @@ async function run() {
 			const result = await classCollection
 				.find({ status: "approved" })
 				.sort({ createdAt: -1 })
+				.toArray();
+			res.send(result);
+		});
+
+		//get popular class for public
+		app.get("/popularClasses", async (req, res) => {
+			const result = await classCollection
+				.find({ status: "approved" })
+				.sort({ enrolled: -1 })
+				.limit(6)
 				.toArray();
 			res.send(result);
 		});
