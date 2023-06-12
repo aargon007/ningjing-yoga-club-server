@@ -93,7 +93,7 @@ async function run() {
 		app.get("/allInstructors", async (req, res) => {
 			const result = await usersCollection
 				.find({ role: "instructor" })
-				.sort({ createdAt: -1, enrolled })
+				.sort({ createdAt: -1 })
 				.toArray();
 			res.send(result);
 		});
